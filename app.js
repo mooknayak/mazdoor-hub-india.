@@ -308,7 +308,7 @@ function initUserPage() {
         display.appendChild(card);
       });
     } catch (err) {
-      display.innerHTML = `<p class='text-center text-danger'>Error: ${escHtml(err.message)} (a Firestore composite index may be required — check the browser console for a link)</p>`;
+      display.innerHTML = `<p class="text-center text-danger">Error: ${escHtml(err.message)} (a Firestore composite index may be required — check the browser console for a link)</p>`;
       console.error("Search error:", err);
     }
   }
@@ -450,7 +450,7 @@ function initAdminPage() {
         listEl.appendChild(col);
       });
     } catch (err) {
-      listEl.innerHTML = `<p class='text-center text-danger'>Error: ${escHtml(err.message)}</p>`;
+      listEl.innerHTML = `<p class="text-center text-danger">Error: ${escHtml(err.message)}</p>`;
       console.error("Admin list error:", err);
     }
   }
