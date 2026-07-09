@@ -143,17 +143,24 @@
 
                 <div class="mb-3">
                   <label class="form-label fw-semibold">Profile Photo</label>
+                  <div id="existing-profile-photo" class="mb-2"></div>
                   <input type="file" class="form-control" id="f-pfile" accept="image/*" />
                 </div>
                 <div class="mb-3">
-                  <label class="form-label fw-semibold">Work Photos (multiple)</label>
+                  <label class="form-label fw-semibold">
+                    Work Photos (multiple) — <span id="existing-work-photos-count" class="hint">0 / 10</span>
+                  </label>
+                  <div id="existing-work-photos" class="gallery-edit-row mb-2"></div>
                   <input type="file" class="form-control" id="f-wfile" accept="image/*" multiple />
                 </div>
                 <div class="mb-3">
-                  <label class="form-label fw-semibold">Work Videos (multiple)</label>
+                  <label class="form-label fw-semibold">
+                    Work Videos (multiple) — <span id="existing-work-videos-count" class="hint">0 / 5</span>
+                  </label>
+                  <div id="existing-work-videos" class="gallery-edit-row mb-2"></div>
                   <input type="file" class="form-control" id="f-vfile" accept="video/*" multiple />
                 </div>
-                <p class="hint small">Each file limit is 5MB. Leave a field empty to keep existing photos/videos unchanged.</p>
+                <p class="hint small">Each file limit is 5MB. Maximum 10 photos and 5 videos total — delete an existing one (✕) to make room for a new upload. Leave a field empty to keep existing photos/videos unchanged.</p>
 
                 <div class="form-check mb-3">
                   <input class="form-check-input" type="checkbox" id="f-consent" />

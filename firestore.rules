@@ -9,13 +9,14 @@ service cloud.firestore {
 
     // Workers: anyone can read (needed for public search).
     // A worker can create/update their own document, but CANNOT change their own
-    // badge field — only an admin (listed in /admins) can change badge.
+    // badge or tag fields — only an admin (listed in /admins) can change those.
     match /workers/{uid} {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == uid;
       allow update: if isAdmin() ||
                        (request.auth != null && request.auth.uid == uid &&
-                        request.resource.data.badge == resource.data.badge);
+                        request.resource.data.badge == resource.data.badge &&
+                        request.resource.data.tag == resource.data.tag);
       allow delete: if false; // delete from Firebase Console if ever needed
     }
 
