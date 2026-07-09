@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Mazdoor Hub India</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="style.css" rel="stylesheet" />
+</head>
+<body>
+
+  <div id="recaptcha-container"></div>
+
+  <header class="site-header text-center py-4">
+    <h1 class="fw-semibold mb-1">Mazdoor Hub India — Admin</h1>
+    <p class="tagline mb-0">Manage worker profiles and badges</p>
+  </header>
+
+  <nav class="navbar navbar-expand navbar-dark site-nav justify-content-center">
+    <a class="nav-link text-white mx-2" href="index.html">Home</a>
+    <a class="nav-link text-white mx-2" href="admin.html">Admin Dashboard</a>
+  </nav>
+
+  <div class="container py-4">
+
+    <!-- Admin login gate -->
+    <div id="admin-login-card" class="card widget-card mx-auto mb-4" style="max-width:420px;">
+      <div class="card-body">
+        <h2 class="h5 text-center mb-3">Admin Login</h2>
+        <p class="hint small text-center">
+          Sign in with your registered admin mobile number. Only phone numbers listed as
+          admins in Firestore (see <code>admins</code> collection) can update badges —
+          this page alone does not grant access; Firestore Security Rules enforce it.
+        </p>
+
+        <div id="admin-otp-step">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Admin Mobile Number</label>
+            <input type="tel" class="form-control" id="admin-phone" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit mobile number" />
+          </div>
+          <button class="btn btn-primary w-100" id="admin-send-otp-btn">Send OTP</button>
+          <p class="hint small mt-2" id="admin-otp-status-msg"></p>
+
+          <div id="admin-otp-input-area" style="display:none;" class="mt-3">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Enter OTP</label>
+              <input type="tel" class="form-control" id="admin-otp-code" maxlength="6" placeholder="6-digit OTP" />
+            </div>
+            <button class="btn btn-primary w-100" id="admin-verify-otp-btn">Verify</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard (hidden until admin logs in) -->
+    <div id="admin-dashboard" style="display:none;">
+
+      <div class="row g-2 mb-4">
+        <div class="col-12 col-md-4">
+          <input type="text" class="form-control" id="admin-filter-state" placeholder="Filter by state" />
+        </div>
+        <div class="col-12 col-md-4">
+          <input type="text" class="form-control" id="admin-filter-dist" placeholder="Filter by district" />
+        </div>
+        <div class="col-12 col-md-4">
+          <button class="btn btn-outline-primary w-100" id="admin-refresh-btn">Refresh List</button>
+        </div>
+      </div>
+
+      <div id="admin-worker-list" class="row g-3"></div>
+    </div>
+
+  </div>
+
+  <footer class="site-footer text-center py-4">
+    <p class="mb-0 small">&copy; Mazdoor Hub India. All rights reserved.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

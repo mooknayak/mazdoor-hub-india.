@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mazdoor Hub India - Connecting Workers with Opportunities</title>
+  <meta name="description" content="Mazdoor Hub India - a platform connecting skilled and unskilled workers with employers across India." />
+
+  <!-- Bootstrap CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="style.css" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Required for Firebase Phone Auth -->
+  <div id="recaptcha-container"></div>
+
+  <!-- Header -->
+  <header class="site-header text-center py-4">
+    <h1 class="fw-semibold mb-1">Mazdoor Hub India</h1>
+    <p class="tagline mb-0">Connecting workers with opportunities across India</p>
+  </header>
+
+  <!-- Nav -->
+  <nav class="navbar navbar-expand navbar-dark site-nav justify-content-center">
+    <a class="nav-link text-white mx-2" href="index.html">Home</a>
+    <a class="nav-link text-white mx-2" href="about.html">About Us</a>
+    <a class="nav-link text-white mx-2" href="contact.html">Contact Us</a>
+    <a class="nav-link text-white mx-2" href="admin.html">Admin</a>
+  </nav>
+
+  <!-- CTA buttons -->
+  <div class="container">
+    <div class="row justify-content-center cta-row py-4 g-3">
+      <div class="col-6 col-sm-4">
+        <button class="btn btn-primary w-100 py-3 fw-semibold" onclick="window.showMazdoorForm && window.showMazdoorForm()">Register</button>
+      </div>
+      <div class="col-6 col-sm-4">
+        <button class="btn btn-outline-danger w-100 py-3 fw-semibold" onclick="window.showMazdoorForm && window.showMazdoorForm()">Update Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container pb-5">
+    <div class="row justify-content-center g-4">
+
+      <!-- Registration / Update Profile card -->
+      <div class="col-12 col-md-6 col-lg-5">
+        <div class="card widget-card">
+          <div class="card-body">
+            <h2 class="card-title h5 text-center mb-3">Worker Registration / Update Profile</h2>
+            <p class="hint text-center small">
+              <b>New worker:</b> enter your number and verify OTP to create a new profile.<br />
+              <b>Already registered:</b> enter the same number — your profile will load automatically for editing.
+            </p>
+
+            <div id="mazdoor-form-root" style="display:none;">
+
+              <div id="otp-step">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Mobile Number</label>
+                  <input type="tel" class="form-control" id="reg-phone" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit mobile number" />
+                </div>
+                <button class="btn btn-primary w-100" id="send-otp-btn">Send OTP</button>
+                <p class="hint small mt-2" id="otp-status-msg"></p>
+
+                <div id="otp-input-area" style="display:none;" class="mt-3">
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Enter OTP</label>
+                    <input type="tel" class="form-control" id="otp-code" maxlength="6" placeholder="6-digit OTP" />
+                  </div>
+                  <button class="btn btn-primary w-100" id="verify-otp-btn">Verify</button>
+                </div>
+              </div>
+
+              <div id="profile-form-area" style="display:none;">
+                <p class="hint small" id="mode-hint"></p>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Full Name</label>
+                  <input type="text" class="form-control" id="f-name" maxlength="60" />
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Main Category</label>
+                  <select class="form-select" id="f-maincat"></select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Sub-Category</label>
+                  <select class="form-select" id="f-subcat"><option value="">-- Select main category first --</option></select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">State</label>
+                  <input list="states-list" class="form-control" id="f-state" />
+                  <datalist id="states-list">
+                    <option value="Uttar Pradesh"></option><option value="Bihar"></option><option value="Madhya Pradesh"></option>
+                    <option value="Rajasthan"></option><option value="Maharashtra"></option><option value="Delhi"></option>
+                    <option value="Haryana"></option><option value="Punjab"></option><option value="West Bengal"></option>
+                    <option value="Gujarat"></option><option value="Jharkhand"></option><option value="Odisha"></option>
+                  </datalist>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">District</label>
+                  <input type="text" class="form-control" id="f-dist" maxlength="40" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Pincode</label>
+                  <input type="tel" class="form-control" id="f-pin" maxlength="6" pattern="[0-9]{6}" />
+                </div>
+
+                <div class="row g-2">
+                  <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold">Experience (years)</label>
+                    <input type="number" class="form-control" id="f-exp" min="0" max="60" />
+                  </div>
+                  <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold">Basis</label>
+                    <select class="form-select" id="f-basis">
+                      <option value="Daily">Daily</option>
+                      <option value="Contract">Contract</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold">Min Rate (₹)</label>
+                    <input type="number" class="form-control" id="f-min" min="0" />
+                  </div>
+                  <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold">Max Rate (₹)</label>
+                    <input type="number" class="form-control" id="f-max" min="0" />
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Status</label>
+                  <select class="form-select" id="f-status">
+                    <option value="Available">Available</option>
+                    <option value="Busy">Busy</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Profile Photo</label>
+                  <div id="existing-profile-photo" class="mb-2"></div>
+                  <input type="file" class="form-control" id="f-pfile" accept="image/*" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">
+                    Work Photos (multiple) — <span id="existing-work-photos-count" class="hint">0 / 10</span>
+                  </label>
+                  <div id="existing-work-photos" class="gallery-edit-row mb-2"></div>
+                  <input type="file" class="form-control" id="f-wfile" accept="image/*" multiple />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">
+                    Work Videos (multiple) — <span id="existing-work-videos-count" class="hint">0 / 5</span>
+                  </label>
+                  <div id="existing-work-videos" class="gallery-edit-row mb-2"></div>
+                  <input type="file" class="form-control" id="f-vfile" accept="video/*" multiple />
+                </div>
+                <p class="hint small">Each file limit is 5MB. Maximum 10 photos and 5 videos total — delete an existing one (✕) to make room for a new upload. Leave a field empty to keep existing photos/videos unchanged.</p>
+
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="f-consent" />
+                  <label class="form-check-label small" for="f-consent">
+                    I consent to my mobile number being shown to employers via the "Call Now" button.
+                  </label>
+                </div>
+
+                <button class="btn btn-success w-100" id="submit-btn">Submit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search card -->
+      <div class="col-12 col-md-6 col-lg-5">
+        <div class="card widget-card">
+          <div class="card-body">
+            <h2 class="card-title h5 text-center mb-3">Find a Worker</h2>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">State</label>
+              <input list="s-states-list" class="form-control" id="s-state" placeholder="Select or type state" />
+              <datalist id="s-states-list">
+                <option value="Uttar Pradesh"></option><option value="Bihar"></option><option value="Madhya Pradesh"></option>
+                <option value="Rajasthan"></option><option value="Maharashtra"></option><option value="Delhi"></option>
+                <option value="Haryana"></option><option value="Punjab"></option><option value="West Bengal"></option>
+                <option value="Gujarat"></option><option value="Jharkhand"></option><option value="Odisha"></option>
+              </datalist>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">District</label>
+              <input type="text" class="form-control" id="s-dist" placeholder="Type district" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Main Category</label>
+              <select class="form-select" id="s-maincat"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Sub-Category</label>
+              <select class="form-select" id="s-subcat"><option value="">All</option></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Pincode (optional)</label>
+              <input type="tel" class="form-control" id="s-pin" maxlength="6" pattern="[0-9]{6}" placeholder="For nearby area match" />
+            </div>
+            <button class="btn btn-primary w-100" id="search-btn">Search</button>
+
+            <div id="results-display" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer text-center py-4">
+    <div class="footer-links mb-2">
+      <a href="about.html">About Us</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms &amp; Conditions</a>
+    </div>
+    <p class="mb-0 small">&copy; Mazdoor Hub India. All rights reserved.</p>
+  </footer>
+
+  <!-- Firebase app logic (type="module" so ES module imports work directly, no build step needed) -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

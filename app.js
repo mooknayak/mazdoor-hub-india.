@@ -25,7 +25,8 @@ import {
   getStorage,
   ref,
   uploadBytes,
-  getDownloadURL
+  getDownloadURL,
+  deleteObject
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ============================================================
@@ -87,10 +88,25 @@ function uploadFiles(fileInputId, folder, uid) {
     if (file.size > MAX_FILE_SIZE) {
       return Promise.reject(new Error(`${file.name} is larger than 5MB.`));
     }
-    const fileRef = ref(storage, `${folder}/${uid}/${Date.now()}_${file.name}`);
-    promises.push(uploadBytes(fileRef, file).then((snap) => getDownloadURL(snap.ref)));
+    const path = `${folder}/${uid}/${Date.now()}_${i}_${file.name}`;
+    const fileRef = ref(storage, path);
+    promises.push(uploadBytes(fileRef, file).then((snap) => getDownloadURL(snap.ref)).then((url) => ({ url, path })));
   }
   return Promise.all(promises);
+}
+
+// Normalizes older records where wurl/vurl were plain URL strings (no path)
+// into the newer { url, path } object form used for individual deletion.
+function normalizeMediaArray(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((item) => (typeof item === "string" ? { url: item, path: null } : item));
+}
+
+function deleteStorageFile(path) {
+  if (!path) return Promise.resolve(); // older items with no known path can't be removed from Storage, only from the list
+  return deleteObject(ref(storage, path)).catch((err) => {
+    console.error("Storage delete error (continuing anyway):", err);
+  });
 }
 
 let recaptchaVerifier = null;
@@ -106,7 +122,7 @@ function initRecaptcha(containerId) {
 // ============================================================
 let currentUid = null;
 let confirmationResult = null;
-let existingUrls = { purl: null, wurl: [], vurl: [] };
+let existingUrls = { purl: null, purlPath: null, wurl: [], vurl: [] };
 
 function initUserPage() {
   const regPhoneEl = document.getElementById("reg-phone");
@@ -201,10 +217,67 @@ function initUserPage() {
         document.getElementById("f-subcat").value = d.subCat || "";
       }
       existingUrls.purl = d.purl || null;
-      existingUrls.wurl = d.wurl || [];
-      existingUrls.vurl = d.vurl || [];
+      existingUrls.purlPath = d.purlPath || null;
+      existingUrls.wurl = normalizeMediaArray(d.wurl);
+      existingUrls.vurl = normalizeMediaArray(d.vurl);
+      renderProfilePhotoBox();
+      renderMediaGallery("existing-work-photos", "wurl", "image");
+      renderMediaGallery("existing-work-videos", "vurl", "video");
     } else {
       hint.innerText = "Creating a new profile — please fill in all details.";
+      renderProfilePhotoBox();
+      renderMediaGallery("existing-work-photos", "wurl", "image");
+      renderMediaGallery("existing-work-videos", "vurl", "video");
+    }
+  }
+
+  function renderProfilePhotoBox() {
+    const box = document.getElementById("existing-profile-photo");
+    if (!box) return;
+    if (existingUrls.purl) {
+      box.innerHTML = `
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <img src="${escHtml(existingUrls.purl)}" class="profile-thumb" />
+          <button type="button" class="btn btn-sm btn-outline-danger" id="remove-purl-btn">Remove Photo</button>
+        </div>`;
+      document.getElementById("remove-purl-btn").addEventListener("click", async () => {
+        await deleteStorageFile(existingUrls.purlPath);
+        existingUrls.purl = null;
+        existingUrls.purlPath = null;
+        renderProfilePhotoBox();
+      });
+    } else {
+      box.innerHTML = "";
+    }
+  }
+
+  function renderMediaGallery(containerId, type, kind) {
+    const box = document.getElementById(containerId);
+    if (!box) return;
+    box.innerHTML = "";
+    existingUrls[type].forEach((item, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "gallery-edit-item";
+      wrap.innerHTML =
+        kind === "image"
+          ? `<img src="${escHtml(item.url)}" class="gallery-edit-thumb" />`
+          : `<video src="${escHtml(item.url)}" class="gallery-edit-thumb" controls></video>`;
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "gallery-edit-del";
+      delBtn.innerText = "✕";
+      delBtn.addEventListener("click", async () => {
+        await deleteStorageFile(item.path);
+        existingUrls[type].splice(idx, 1);
+        renderMediaGallery(containerId, type, kind);
+      });
+      wrap.appendChild(delBtn);
+      box.appendChild(wrap);
+    });
+    const countLabel = document.getElementById(containerId + "-count");
+    if (countLabel) {
+      const max = type === "wurl" ? 10 : 5;
+      countLabel.innerText = `${existingUrls[type].length} / ${max}`;
     }
   }
 
@@ -217,6 +290,29 @@ function initUserPage() {
     if (!name) { alert("Name is required."); return; }
     if (!mainCat || !subCat) { alert("Please select a category."); return; }
     if (!consent) { alert("Please check the consent box."); return; }
+
+    // ===== Enforce media limits: max 10 work photos, max 5 work videos =====
+    const newPhotoCount = document.getElementById("f-wfile").files.length;
+    const newVideoCount = document.getElementById("f-vfile").files.length;
+    const totalPhotosAfter = existingUrls.wurl.length + newPhotoCount;
+    const totalVideosAfter = existingUrls.vurl.length + newVideoCount;
+
+    if (totalPhotosAfter > 10) {
+      alert(
+        `You can have a maximum of 10 work photos. You currently have ${existingUrls.wurl.length} saved ` +
+        `and are trying to add ${newPhotoCount} more (total ${totalPhotosAfter}). ` +
+        `Please delete some existing photos above (✕) before adding new ones.`
+      );
+      return;
+    }
+    if (totalVideosAfter > 5) {
+      alert(
+        `You can have a maximum of 5 work videos. You currently have ${existingUrls.vurl.length} saved ` +
+        `and are trying to add ${newVideoCount} more (total ${totalVideosAfter}). ` +
+        `Please delete some existing videos above (✕) before adding new ones.`
+      );
+      return;
+    }
 
     const btn = document.getElementById("submit-btn");
     btn.disabled = true;
@@ -242,7 +338,8 @@ function initUserPage() {
         min: document.getElementById("f-min").value,
         max: document.getElementById("f-max").value,
         status: document.getElementById("f-status").value,
-        purl: purlResult ? purlResult[0] : existingUrls.purl,
+        purl: purlResult ? purlResult[0].url : existingUrls.purl,
+        purlPath: purlResult ? purlResult[0].path : existingUrls.purlPath,
         wurl: wurlResult ? existingUrls.wurl.concat(wurlResult) : existingUrls.wurl,
         vurl: vurlResult ? existingUrls.vurl.concat(vurlResult) : existingUrls.vurl,
         updatedAt: serverTimestamp()
@@ -289,6 +386,14 @@ function initUserPage() {
       snapshot.forEach((docSnap) => {
         const w = docSnap.data();
         const badgeIcon = w.badge === "Diamond" ? "💎" : w.badge === "Gold" ? "🥇" : "🥈";
+        const photos = normalizeMediaArray(w.wurl);
+        const videos = normalizeMediaArray(w.vurl);
+        const galleryHtml = (photos.length || videos.length)
+          ? `<div class="worker-gallery">
+              ${photos.map((p) => `<img src="${escHtml(p.url)}" class="gallery-thumb" onclick="window.open('${escHtml(p.url)}','_blank')" />`).join("")}
+              ${videos.map((v) => `<video src="${escHtml(v.url)}" class="gallery-thumb" controls></video>`).join("")}
+            </div>`
+          : `<p class="hint small mb-0">No work photos/videos uploaded yet.</p>`;
         const card = document.createElement("div");
         card.className = "worker-id-card mb-3";
         card.innerHTML = `
@@ -297,11 +402,13 @@ function initUserPage() {
             <img class="profile-thumb" src="${escHtml(w.purl || "")}" onerror="this.style.visibility='hidden'" />
             <div><div class="w-name">${escHtml(w.name)}</div><div class="reg-id-box">ID: ${docSnap.id.slice(-6)}</div></div>
           </div>
+          ${w.tag ? `<div class="admin-tag">${escHtml(w.tag)}</div>` : ""}
           <div class="w-cat">${escHtml(w.mainCat)} — ${escHtml(w.subCat)}</div>
           <div class="info-line"><b>Experience:</b> ${escHtml(w.exp)} years</div>
           <div class="info-line"><b>Rate:</b> ₹${escHtml(w.min)} - ₹${escHtml(w.max)} (${escHtml(w.basis)})</div>
           <div class="info-line"><b>Location:</b> ${escHtml(w.dist)}, ${escHtml(w.state)} - ${escHtml(w.pin)}</div>
           <div class="info-line"><b>Status:</b> ${escHtml(w.status)}</div>
+          ${galleryHtml}
           <button class="call-btn" data-id="${docSnap.id}">📞 Reveal Number &amp; Call</button>
         `;
         card.querySelector(".call-btn").addEventListener("click", (e) => revealNumber(e.target));
@@ -437,16 +544,30 @@ function initAdminPage() {
             <div class="info-line"><b>Mobile:</b> ${escHtml(w.mob)}</div>
             <div class="info-line"><b>Location:</b> ${escHtml(w.dist)}, ${escHtml(w.state)}</div>
             <div class="info-line"><b>Current Badge:</b> ${escHtml(w.badge || "Silver")}</div>
+            <div class="info-line"><b>Current Tag:</b> ${w.tag ? escHtml(w.tag) : "(none)"}</div>
             <div class="badge-btn-row">
               <button class="badge-btn silver ${w.badge === "Silver" || !w.badge ? "active-badge" : ""}" data-id="${docSnap.id}" data-badge="Silver">Silver</button>
               <button class="badge-btn gold ${w.badge === "Gold" ? "active-badge" : ""}" data-id="${docSnap.id}" data-badge="Gold">Gold</button>
               <button class="badge-btn diamond ${w.badge === "Diamond" ? "active-badge" : ""}" data-id="${docSnap.id}" data-badge="Diamond">Diamond</button>
+            </div>
+            <div class="input-group input-group-sm mt-2">
+              <input type="text" class="form-control tag-input" placeholder="e.g. Verified, Top Rated, Blacklisted" value="${w.tag ? escHtml(w.tag) : ""}" maxlength="30" />
+              <button class="btn btn-outline-primary set-tag-btn" data-id="${docSnap.id}">Set Tag</button>
+              ${w.tag ? `<button class="btn btn-outline-secondary clear-tag-btn" data-id="${docSnap.id}">Clear</button>` : ""}
             </div>
           </div>
         `;
         col.querySelectorAll(".badge-btn").forEach((btn) => {
           btn.addEventListener("click", () => updateBadge(btn.getAttribute("data-id"), btn.getAttribute("data-badge")));
         });
+        const tagInput = col.querySelector(".tag-input");
+        col.querySelector(".set-tag-btn").addEventListener("click", (e) => {
+          updateTag(e.target.getAttribute("data-id"), tagInput.value.trim());
+        });
+        const clearBtn = col.querySelector(".clear-tag-btn");
+        if (clearBtn) {
+          clearBtn.addEventListener("click", (e) => updateTag(e.target.getAttribute("data-id"), ""));
+        }
         listEl.appendChild(col);
       });
     } catch (err) {
@@ -462,6 +583,16 @@ function initAdminPage() {
     } catch (err) {
       alert("Error updating badge: " + err.message);
       console.error("Badge update error:", err);
+    }
+  }
+
+  async function updateTag(workerId, newTag) {
+    try {
+      await updateDoc(doc(db, "workers", workerId), { tag: newTag });
+      await loadWorkerList();
+    } catch (err) {
+      alert("Error updating tag: " + err.message);
+      console.error("Tag update error:", err);
     }
   }
 }
