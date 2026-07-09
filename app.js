@@ -117,6 +117,26 @@ function initRecaptcha(containerId) {
   return recaptchaVerifier;
 }
 
+// ===== In-page media lightbox (used by search result galleries) =====
+window.openMediaModal = function (url, kind) {
+  const modal = document.getElementById("media-modal");
+  const body = document.getElementById("media-modal-body");
+  if (!modal || !body) return;
+  body.innerHTML =
+    kind === "video"
+      ? `<video src="${escHtml(url)}" controls autoplay style="max-width:92vw; max-height:82vh;"></video>`
+      : `<img src="${escHtml(url)}" style="max-width:92vw; max-height:82vh;" />`;
+  modal.style.display = "flex";
+};
+
+window.closeMediaModal = function () {
+  const modal = document.getElementById("media-modal");
+  const body = document.getElementById("media-modal-body");
+  if (!modal || !body) return;
+  modal.style.display = "none";
+  body.innerHTML = ""; // stops any playing video
+};
+
 // ============================================================
 // 3. USER SIDE — index.html (registration / update profile / search)
 // ============================================================
@@ -390,8 +410,8 @@ function initUserPage() {
         const videos = normalizeMediaArray(w.vurl);
         const galleryHtml = (photos.length || videos.length)
           ? `<div class="worker-gallery">
-              ${photos.map((p) => `<img src="${escHtml(p.url)}" class="gallery-thumb" onclick="window.open('${escHtml(p.url)}','_blank')" />`).join("")}
-              ${videos.map((v) => `<video src="${escHtml(v.url)}" class="gallery-thumb" controls></video>`).join("")}
+              ${photos.map((p) => `<img src="${escHtml(p.url)}" class="gallery-thumb" onclick="window.openMediaModal('${escHtml(p.url)}','image')" />`).join("")}
+              ${videos.map((v) => `<div class="video-thumb" onclick="window.openMediaModal('${escHtml(v.url)}','video')">▶</div>`).join("")}
             </div>`
           : `<p class="hint small mb-0">No work photos/videos uploaded yet.</p>`;
         const card = document.createElement("div");

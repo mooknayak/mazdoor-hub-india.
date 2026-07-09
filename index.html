@@ -15,6 +15,15 @@
   <!-- Required for Firebase Phone Auth -->
   <div id="recaptcha-container"></div>
 
+  <!-- Media lightbox: opens gallery photos/videos in-page instead of a new tab -->
+  <div id="media-modal" class="media-modal" style="display:none;">
+    <div class="media-modal-backdrop" onclick="window.closeMediaModal()"></div>
+    <div class="media-modal-content">
+      <button type="button" class="media-modal-close" onclick="window.closeMediaModal()">✕</button>
+      <div id="media-modal-body"></div>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="site-header text-center py-4">
     <h1 class="fw-semibold mb-1">Mazdoor Hub India</h1>
